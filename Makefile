@@ -2,8 +2,8 @@
 
 SCRIPT_PATH ?= src/image.java
 
-build-image:
-	cekit -v build docker --no-squash
-
-run-image:
-	./run-image.sh
+run-image-docker:
+	docker rm $$(docker ps -aq --filter name=mandrel-packaging)
+	docker run --name=mandrel-packaging -itd fedora:32
+	ansible-playbook -i mandrel-packaging, -c docker ansible/playbook.yml
+	docker start -ai mandrel-packaging
