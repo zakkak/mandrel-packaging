@@ -402,7 +402,7 @@ class Mx
 
         final var clean = !options.skipClean;
         if (clean)
-            exec.exec.accept(Mx.mxclean(options, mxHome, graalHome));
+            exec.exec.accept(Mx.mxclean(options, mxHome, graalHome, javaHome));
 
         BUILD_STEPS.stream()
             .map(Mx.mxbuild(options, mxHome, graalHome, javaHome))
@@ -413,6 +413,7 @@ class Mx
         Options options
         , Function<Path, Path> mxHome
         , Function<Path, Path> graalHome
+        , Supplier<Path> javaHome
     )
     {
         final var mx = mxHome.apply(Paths.get("mx"));
@@ -420,6 +421,8 @@ class Mx
             Arrays.asList(
                 mx.toString()
                 , options.verbose ? "-V" : ""
+                , "--java-home"
+                , javaHome.get().toString()
                 , "clean"
             )
             , graalHome.apply(Path.of("substratevm"))
@@ -1242,7 +1245,7 @@ final class Check
         final Supplier<Path> javaHome = () -> Path.of("java");
         Mx.build(options, exec, replace, identity, identity, javaHome);
         os.assertNumberOfTasks(7);
-        os.assertTask("mx clean");
+        os.assertTask("mx --java-home java clean");
         os.assertTask("mx --trust-http --java-home java build --no-native --dependencies GRAAL_SDK");
         os.assertTask("mx --trust-http --java-home java build --no-native --dependencies GRAAL");
         os.assertTask("mx --trust-http --java-home java build --no-native --dependencies POINTSTO");
