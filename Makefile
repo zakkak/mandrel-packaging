@@ -17,7 +17,7 @@ setup-image: run-image
 	ansible-playbook -i $(IMAGE_NAME), -c $(DOCKER) $(PLAYBOOK) -e configuration=$(PLAYBOOK_CONF)
 
 stop-image:
-	$(DOCKER) stop $(IMAGE_NAME)
+	$(DOCKER) stop $(IMAGE_NAME) || true
 
 run-image-attach: stop-image
 	$(DOCKER) start -ai $(IMAGE_NAME)
@@ -26,7 +26,7 @@ run-image:
 	$(DOCKER) start $(IMAGE_NAME)
 
 rm-image: stop-image
-	$(DOCKER) rm $(IMAGE_NAME)
+	$(DOCKER) rm $(IMAGE_NAME) || true
 
 cp-script: run-image
 	$(DOCKER) cp $(SCRIPT_PATH) $(IMAGE_NAME)
