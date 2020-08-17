@@ -46,12 +46,13 @@ fi
 basename="$(dirname $0)"
 ${JAVA_HOME}/bin/java -ea $basename/src/build.java ${VERBOSE_BUILD} --version "${MAVEN_ARTIFACTS_VERSION}" --maven-local-repository ${MAVEN_REPO} --mx-home ${MX_HOME} --mandrel-home ${MANDREL_REPO} ${SKIP_CLEAN_FLAG} ${MAVEN_HOME_ARGS}
 
-### Copy default JDK
 rm -rf ${MANDREL_HOME}
-cp -R -L ${JAVA_HOME} ${MANDREL_HOME}
+cwd=$(pwd)
+pushd ${MANDREL_REPO}
+${MX_HOME}/mx --primary-suite substratevm makegraaljdk ${cwd}/${MANDREL_HOME}
+popd
 
 ### Copy needed jars
-
 mkdir -p ${MANDREL_HOME}/lib/svm/builder
 cp ${MAVEN_REPO}/org/graalvm/nativeimage/svm/${MAVEN_ARTIFACTS_VERSION}/svm-${MAVEN_ARTIFACTS_VERSION}.jar ${MANDREL_HOME}/lib/svm/builder/svm.jar
 cp ${MAVEN_REPO}/org/graalvm/nativeimage/svm/${MAVEN_ARTIFACTS_VERSION}/svm-${MAVEN_ARTIFACTS_VERSION}-sources.jar ${MANDREL_HOME}/lib/svm/builder/svm.src.zip
@@ -63,13 +64,6 @@ cp ${MAVEN_REPO}/org/graalvm/nativeimage/objectfile/${MAVEN_ARTIFACTS_VERSION}/o
 mkdir ${MANDREL_HOME}/lib/graalvm
 cp ${MAVEN_REPO}/org/graalvm/nativeimage/svm-driver/${MAVEN_ARTIFACTS_VERSION}/svm-driver-${MAVEN_ARTIFACTS_VERSION}.jar ${MANDREL_HOME}/lib/graalvm/svm-driver.jar
 cp ${MAVEN_REPO}/org/graalvm/nativeimage/svm-driver/${MAVEN_ARTIFACTS_VERSION}/svm-driver-${MAVEN_ARTIFACTS_VERSION}-sources.jar ${MANDREL_HOME}/lib/graalvm/svm-driver.src.zip
-
-## The following jars are not included in the GraalJDK created by `mx --components="Native Image" build`
-mkdir ${MANDREL_HOME}/lib/jvmci
-cp ${MAVEN_REPO}/org/graalvm/sdk/graal-sdk/${MAVEN_ARTIFACTS_VERSION}/graal-sdk-${MAVEN_ARTIFACTS_VERSION}.jar ${MANDREL_HOME}/lib/jvmci/graal-sdk.jar
-cp ${MAVEN_REPO}/org/graalvm/sdk/graal-sdk/${MAVEN_ARTIFACTS_VERSION}/graal-sdk-${MAVEN_ARTIFACTS_VERSION}-sources.jar ${MANDREL_HOME}/lib/jvmci/graal-sdk.src.zip
-cp ${MAVEN_REPO}/org/graalvm/compiler/compiler/${MAVEN_ARTIFACTS_VERSION}/compiler-${MAVEN_ARTIFACTS_VERSION}.jar ${MANDREL_HOME}/lib/jvmci/graal.jar
-cp ${MAVEN_REPO}/org/graalvm/compiler/compiler/${MAVEN_ARTIFACTS_VERSION}/compiler-${MAVEN_ARTIFACTS_VERSION}-sources.jar ${MANDREL_HOME}/lib/jvmci/graal.src.zip
 
 mkdir ${MANDREL_HOME}/lib/truffle
 cp ${MAVEN_REPO}/org/graalvm/truffle/truffle-api/${MAVEN_ARTIFACTS_VERSION}/truffle-api-${MAVEN_ARTIFACTS_VERSION}.jar ${MANDREL_HOME}/lib/truffle/truffle-api.jar
@@ -94,20 +88,18 @@ cp ${MANDREL_REPO}/substratevm/src/com.oracle.svm.libffi/include/svm_libffi.h ${
 cp ${MANDREL_REPO}/truffle/src/com.oracle.truffle.nfi.native/include/trufflenfi.h ${MANDREL_HOME}/lib/svm/clibraries/${PLATFORM}-amd64/include
 cp ${MANDREL_REPO}/substratevm/mxbuild/${PLATFORM}-amd64/src/com.oracle.svm.native.libchelper/amd64/liblibchelper.a ${MANDREL_HOME}/lib/svm/clibraries/${PLATFORM}-amd64
 cp ${MANDREL_REPO}/substratevm/mxbuild/${PLATFORM}-amd64/src/com.oracle.svm.native.jvm.posix/amd64/libjvm.a ${MANDREL_HOME}/lib/svm/clibraries/${PLATFORM}-amd64
-mkdir ${MANDREL_HOME}/lib/svm/bin
+mkdir -p ${MANDREL_HOME}/lib/svm/bin
 cp ${MANDREL_REPO}/sdk/mxbuild/${PLATFORM}-amd64/native-image.image-bash/native-image ${MANDREL_HOME}/lib/svm/bin/native-image
 ## Create symbolic link in bin
 ln -s ../lib/svm/bin/native-image ${MANDREL_HOME}/bin/native-image
 
-### Fix native-image launcher
-sed -i -e "s!EnableJVMCI!EnableJVMCI -Dorg.graalvm.version=\"${MANDREL_VERSION}\" -Dorg.graalvm.config=\"(Mandrel Distribution)\" --upgrade-module-path \${location}/../../jvmci/graal.jar --add-modules \"org.graalvm.truffle,org.graalvm.sdk\" --module-path \${location}/../../truffle/truffle-api.jar:\${location}/../../jvmci/graal-sdk.jar!" \
-    "${MANDREL_HOME}/lib/svm/bin/native-image"
-## Explicitly export jdk.vm.ci.code to jdk.internal.vm.compiler
-sed -i -e "s!JDK9Plus'!JDK9Plus' -J--add-exports=jdk.internal.vm.ci/jdk.vm.ci.code=jdk.internal.vm.compiler!" \
-    "${MANDREL_HOME}/lib/svm/bin/native-image"
+### Fix version info in native-image launcher
+sed -i -e "s!EnableJVMCI!EnableJVMCI -Dorg.graalvm.version=\"${MANDREL_VERSION}\"!" "${MANDREL_HOME}/lib/svm/bin/native-image"
 
 ### Create tarball
-case $TAR_SUFFIX in
-  tar.gz ) tar -czf "${ARCHIVE_NAME}" -C $(dirname ${MANDREL_HOME}) $(basename ${MANDREL_HOME}) ;;
-  tarxz  ) Z_OPT=-9e tar cJf "${ARCHIVE_NAME}" -C $(dirname ${MANDREL_HOME}) $(basename ${MANDREL_HOME}) ;;
-esac
+if [[ "${SKIP_ARCHIVE}" != "true" ]]; then
+  case $TAR_SUFFIX in
+    tar.gz ) tar -czf "${ARCHIVE_NAME}" -C $(dirname ${MANDREL_HOME}) $(basename ${MANDREL_HOME}) ;;
+    tarxz  ) Z_OPT=-9e tar cJf "${ARCHIVE_NAME}" -C $(dirname ${MANDREL_HOME}) $(basename ${MANDREL_HOME}) ;;
+  esac
+fi

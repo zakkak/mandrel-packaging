@@ -412,7 +412,7 @@ class Mx
     );
 
     static final List<BuildArgs> BUILD_JAVA_STEPS = List.of(
-            BuildArgs.of("--no-native", "--dependencies", "GRAAL_SDK,GRAAL,POINTSTO,OBJECTFILE,SVM_DRIVER")
+            BuildArgs.of("--no-native", "--dependencies", "GRAAL_SDK,GRAAL,POINTSTO,OBJECTFILE,SVM_DRIVER,GRAAL_MANAGEMENT,GRAAL_TRUFFLE_JFR_IMPL,JAOTC")
             , BuildArgs.of("--no-native", "--only", SVM_ONLY)
     );
 
@@ -1338,7 +1338,7 @@ final class Check
         Mx.build(options, exec, replace, identity, identity, javaHome);
         os.assertNumberOfTasks(5);
         os.assertTask("mx clean");
-        os.assertTask("mx --trust-http --java-home java build --no-native --dependencies GRAAL_SDK,GRAAL,POINTSTO,OBJECTFILE,SVM_DRIVER");
+        os.assertTask("mx --trust-http --java-home java build --no-native --dependencies GRAAL_SDK,GRAAL,POINTSTO,OBJECTFILE,SVM_DRIVER,GRAAL_MANAGEMENT,GRAAL_TRUFFLE_JFR_IMPL,JAOTC");
         os.assertTask(String.format(
             "mx --trust-http --java-home java build --no-native --only %s"
             , Mx.SVM_ONLY
