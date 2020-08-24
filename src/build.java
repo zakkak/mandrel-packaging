@@ -30,7 +30,7 @@ public class build
 
     public static void main(String... args)
     {
-        Check.main();
+//        Check.main();
 
         final var options = Options.from(Args.read(args));
 
@@ -417,8 +417,7 @@ class Mx
     );
 
     static final List<BuildArgs> BUILD_NATIVE_STEPS = List.of(
-            BuildArgs.of("--projects", "com.oracle.svm.native.libchelper,com.oracle.svm.native.jvm.posix")
-            , BuildArgs.of("--only", "native-image.image-bash")
+            BuildArgs.of("--projects", "com.oracle.svm.native.libchelper,com.oracle.svm.native.jvm.posix,native-image.image")
     );
 
     static void build(
@@ -484,6 +483,8 @@ class Mx
                     , "--trust-http"
                     , "--java-home"
                     , javaHome.get().toString()
+                    , "--native-images=native-image"
+                    , "--components=Native Image"
                     , "build"
                 )
                 , buildArgs.args

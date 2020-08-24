@@ -95,16 +95,9 @@ cp ${MANDREL_REPO}/truffle/src/com.oracle.truffle.nfi.native/include/trufflenfi.
 cp ${MANDREL_REPO}/substratevm/mxbuild/${PLATFORM}-amd64/src/com.oracle.svm.native.libchelper/amd64/liblibchelper.a ${MANDREL_HOME}/lib/svm/clibraries/${PLATFORM}-amd64
 cp ${MANDREL_REPO}/substratevm/mxbuild/${PLATFORM}-amd64/src/com.oracle.svm.native.jvm.posix/amd64/libjvm.a ${MANDREL_HOME}/lib/svm/clibraries/${PLATFORM}-amd64
 mkdir ${MANDREL_HOME}/lib/svm/bin
-cp ${MANDREL_REPO}/sdk/mxbuild/${PLATFORM}-amd64/native-image.image-bash/native-image ${MANDREL_HOME}/lib/svm/bin/native-image
+cp ${MANDREL_REPO}/sdk/mxbuild/${PLATFORM}-amd64/native-image.image/native-image ${MANDREL_HOME}/lib/svm/bin/native-image
 ## Create symbolic link in bin
 ln -s ../lib/svm/bin/native-image ${MANDREL_HOME}/bin/native-image
-
-### Fix native-image launcher
-sed -i -e "s!EnableJVMCI!EnableJVMCI -Dorg.graalvm.version=\"${MANDREL_VERSION}\" -Dorg.graalvm.config=\"(Mandrel Distribution)\" --upgrade-module-path \${location}/../../jvmci/graal.jar --add-modules \"org.graalvm.truffle,org.graalvm.sdk\" --module-path \${location}/../../truffle/truffle-api.jar:\${location}/../../jvmci/graal-sdk.jar!" \
-    "${MANDREL_HOME}/lib/svm/bin/native-image"
-## Explicitly export jdk.vm.ci.code to jdk.internal.vm.compiler
-sed -i -e "s!JDK9Plus'!JDK9Plus' -J--add-exports=jdk.internal.vm.ci/jdk.vm.ci.code=jdk.internal.vm.compiler!" \
-    "${MANDREL_HOME}/lib/svm/bin/native-image"
 
 ### Create tarball
 case $TAR_SUFFIX in
