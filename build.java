@@ -853,9 +853,9 @@ class Mx
     static void removeDependencies(Tasks.FileReplace.Effects effects, Function<Path, Path> mandrelRepo)
     {
         LOG.debugf("Remove dependencies");
-        final Path suitePy = Path.of("substratevm", "mx.substratevm", "suite.py");
-        final Path path = mandrelRepo.apply(suitePy);
-        final List<String> dependencies = Arrays.asList(
+        Path suitePy = Path.of("substratevm", "mx.substratevm", "suite.py");
+        Path path = mandrelRepo.apply(suitePy);
+        List<String> dependencies = Arrays.asList(
             "truffle:TRUFFLE_NFI",
             "com.oracle.svm.truffle",
             "com.oracle.svm.polyglot",
@@ -866,6 +866,15 @@ class Mx
             "extracted-dependency:truffle:LIBFFI_DIST",
             "extracted-dependency:truffle:TRUFFLE_NFI_NATIVE/include/*",
             "file:src/com.oracle.svm.libffi/include/svm_libffi.h");
+        Tasks.FileReplace.replace(
+            new Tasks.FileReplace(path, removeDependencies(dependencies))
+            , effects
+        );
+        suitePy = Path.of("truffle", "mx.truffle", "suite.py");
+        path = mandrelRepo.apply(suitePy);
+        dependencies = Arrays.asList(
+            "truffle:TRUFFLE_ASM_7.2",
+            "com.oracle.truffle.host");
         Tasks.FileReplace.replace(
             new Tasks.FileReplace(path, removeDependencies(dependencies))
             , effects
