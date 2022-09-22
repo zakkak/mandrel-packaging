@@ -533,15 +533,12 @@ class SequentialBuild
     {
         final Tasks.Exec.Effects exec = new Tasks.Exec.Effects(task -> os.exec(task, false));
         final Tasks.FileReplace.Effects replace = Tasks.FileReplace.Effects.ofSystem();
-        LOG.debugf("Patch sources to remove dependency on truffle-api.jar ...");
-        String patchPath = fs.workingDir().resolve(Path.of("resources", "truffle-api-removal.patch")).toString();
-        exec.exec.accept(Tasks.Exec.of(List.of("git", "apply", patchPath), fs.mandrelRepo()));
         Mx.build(options, exec, replace, fs.mxHome(), fs.mandrelRepo(), os.javaHome());
         if (options.mavenDeploy && !options.skipJava)
         {
             // Create wrapper jar file for archiving resources (e.g. native image launcher script)
             LOG.debugf("Patch sdk suite.py ...");
-            patchPath = fs.workingDir().resolve(Path.of("resources", "mandrel-packaging-wrapper.patch")).toString();
+            String patchPath = fs.workingDir().resolve(Path.of("resources", "mandrel-packaging-wrapper.patch")).toString();
             exec.exec.accept(Tasks.Exec.of(List.of("git", "apply", patchPath), fs.mandrelRepo()));
             LOG.debugf("Build Mandrel's wrapper jar...");
             Mx.BuildArgs buildArgs = Mx.BuildArgs.of("--only", "MANDREL_PACKAGING_WRAPPER");
@@ -1064,7 +1061,7 @@ class Mx
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.runtime.TruffleTypes\",", ""),
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.runtime.EngineCacheSupport\",", ""),
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.jfr\",", ""),
-            new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.compiler.amd64\",", ""),
+            new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.compiler.amd64\",", "\"org.graalvm.compiler.truffle.common\","),
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.runtime.serviceprovider\",", ""),
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.runtime.hotspot\",", ""),
             new SimpleEntry<>("^ +\"org.graalvm.compiler.truffle.runtime.hotspot.java\",", ""),
