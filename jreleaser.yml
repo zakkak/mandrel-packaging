@@ -1,0 +1,60 @@
+# Generated with JReleaser 1.7.0 at 2023-07-06T22:47:07.665051+03:00
+project:
+  name: mandrel
+  version: 23.1.0.0-SNAPSHOT
+  description: Mandrel
+  longDescription: Mandrel is a downstream distribution of the GraalVM community edition
+  authors:
+    - Foivos Zakkak
+    - Karm Babacek
+    - Severin Gehwolf
+  license: GPL-2.0
+  links:
+    homepage: https://github.com/graalvm/mandrel
+  maintainers:
+    - jerboaa
+    - karm
+    - zakkak
+#  inceptionYear: 2019
+  copyright: 2019-2023 GraalVM Community
+
+release:
+  github:
+    owner: zakkak
+    name: mandrel
+    tagName: mandrel-{{projectVersion}}
+    previousTagName: mandrel-23.0.0.0-Final
+    releaseName: Mandrel {{projectVersion}}
+    skipTag: true
+    sign: false
+    draft: true
+    token: <lala>
+    changelog:
+      formatted: ALWAYS
+      contentTemplate: ./changelog.tpl
+      skipMergeCommits: true
+      includeLabels:
+        - backport
+        - release/noteworthy-feature
+      categories:
+        - title: 'Noteworthy'
+          # Used for identifying the category
+          key: 'noteworthy'
+          labels:
+            - 'release/noteworthy-feature'
+          order: 1
+        - title: 'Backports'
+          key: 'backport'
+          labels:
+            - 'backport'
+          order: 2
+
+distributions:
+  app:
+    type: binary
+    artifacts:
+      - path: changelog.tpl #mandrel-java21-darwin-amd64-23.1.0-dev942303ce3ca.tar.gz
+
+platform:
+  replacements:
+    osx-x86_64: darwin-amd64
