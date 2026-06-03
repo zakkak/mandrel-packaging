@@ -143,6 +143,27 @@ public class build
                 FileSystem.copy(mandrelRepo.resolve(
                     Path.of("sdk", "mxbuild", PLATFORM, "native-image.exe.image-bash", "native-image.export-list")), nativeImageExport);
             }
+
+            // Substitute jdk.internal.vm.ci module if custom jar is provided
+            if (options.customJvmciJar != null)
+            {
+                logger.debugf("Substituting jdk.internal.vm.ci module with custom jar: %s", options.customJvmciJar);
+                final Path customJar = Path.of(options.customJvmciJar);
+
+                if (!customJar.toFile().exists())
+                {
+                    throw new RuntimeException("Custom JVMCI jar not found: " + options.customJvmciJar);
+                }
+
+                // The jdk.internal.vm.ci module classes are typically in lib/modules (jimage)
+                // For runtime substitution, we need to add the jar to the bootclasspath or module path
+                // Copy the custom jar to lib/jvmci directory with a recognizable name
+                final Path jvmciDir = mandrelJavaHome.resolve(Path.of("lib", "jvmci"));
+                final Path targetJar = jvmciDir.resolve("jdk.internal.vm.ci.jar");
+
+                logger.debugf("Copying custom JVMCI jar to: %s", targetJar);
+                FileSystem.copy(customJar, targetJar);
+            }
         }
 
         if (!options.skipNative)
@@ -241,7 +262,7 @@ public class build
             }
 
             logger.debugf("Patch native image...");
-            patchNativeImageLauncher(nativeImage, options.mandrelVersion, options.vendor, options.vendorUrl);
+            patchNativeImageLauncher(nativeImage, options.mandrelVersion, options.vendor, options.vendorUrl, options.customJvmciJar, mandrelJavaHome);
 
             if (!options.skipNativeAgents)
             {
@@ -381,7 +402,7 @@ public class build
     }
 
 
-    private static void patchNativeImageLauncher(Path nativeImage, String mandrelVersion, String vendor, String vendorUrl) throws IOException
+    private static void patchNativeImageLauncher(Path nativeImage, String mandrelVersion, String vendor, String vendorUrl, String customJvmciJar, Path mandrelJavaHome) throws IOException
     {
         final List<String> lines = Files.readAllLines(nativeImage);
         // This is jamming two sets of parameters in between three sections of command line.
@@ -398,11 +419,22 @@ public class build
                 logger.debugf("Launcher line BEFORE: %s", lines.get(i));
                 logger.debugf("launcherMatcher.group(1): %s", launcherMatcher.group(1));
                 logger.debugf("launcherMatcher.group(2): %s", launcherMatcher.group(2));
+
+                // Build the launcher line with custom JVMCI jar if provided
+                String patchModuleArg = "";
+                if (customJvmciJar != null)
+                {
+                    final Path targetJar = mandrelJavaHome.resolve(Path.of("lib", "jvmci", "jdk.internal.vm.ci.jar"));
+                    patchModuleArg = " --patch-module jdk.internal.vm.ci=" + targetJar.toString();
+                    logger.debugf("Adding --patch-module argument for custom JVMCI jar: %s", patchModuleArg);
+                }
+
                 final String launcherLine = launcherMatcher.group(1) +
                     " -Dorg.graalvm.version=\"" + mandrelVersion + "\"" +
                     " -Dorg.graalvm.vendorversion=\"Mandrel-" + mandrelVersion + "\"" +
                     " -Dorg.graalvm.vendor=\"" + (vendor != null ? vendor : defaultVendor) + "\"" +
                     " -Dorg.graalvm.vendorurl=\"" + (vendorUrl != null ? vendorUrl : defaultVendorUrl) + "\"" +
+                    patchModuleArg +
                     launcherMatcher.group(2);
                 lines.set(i, launcherLine);
                 logger.debugf("Launcher line AFTER: %s", lines.get(i));
@@ -476,6 +508,7 @@ class Options
     final String vendorUrl;
     final boolean deployLocally;
     final boolean disableDebuginfoStripping;
+    final String customJvmciJar;
 
     Options(
         boolean mavenDeploy
@@ -499,6 +532,7 @@ class Options
         , String vendorUrl
         , boolean deployLocally
         , boolean disableDebuginfoStripping
+        , String customJvmciJar
     )
     {
         this.mavenDeploy = mavenDeploy;
@@ -522,6 +556,7 @@ class Options
         this.vendorUrl = vendorUrl;
         this.deployLocally = deployLocally;
         this.disableDebuginfoStripping = disableDebuginfoStripping;
+        this.customJvmciJar = customJvmciJar;
     }
 
     public static Options from(Map<String, List<String>> args)
@@ -563,6 +598,7 @@ class Options
         final boolean disableDebuginfoStripping = args.containsKey("disable-debuginfo-stripping");
 
         final String archiveSuffix = optional("archive-suffix", args);
+        final String customJvmciJar = optional("custom-jvmci-jar", args);
 
         return new Options(
             mavenDeploy
@@ -586,6 +622,7 @@ class Options
             , vendorUrl
             , mavenDeployLocal
             , disableDebuginfoStripping
+            , customJvmciJar
         );
     }
 
@@ -1074,7 +1111,7 @@ class Mx
     )
     {
         swapDependencies(options, replace, mxHome);
-        patchSuites(replace, mandrelRepo);
+        patchSuites(replace, mandrelRepo, options);
         hookMavenProxy(options, replace, mxHome);
 
         final boolean clean = !options.skipClean;
@@ -1212,21 +1249,38 @@ class Mx
         return buildArgs ->
         {
             final Path mx = mxHome.resolve("mx");
+
+            // Build base arguments list
+            List<String> baseArgs = new ArrayList<>(List.of(
+                mx.toString()
+                , options.verbose ? "-V" : ""
+            ));
+
+            // Add JVMCI flags and --patch-module if custom JVMCI jar is provided
+            if (options.customJvmciJar != null)
+            {
+                // String patchModuleArg = "-J-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI --patch-module=jdk.internal.vm.ci=" + options.customJvmciJar + " --add-exports=jdk.internal.vm.ci/jdk.vm.ci.meta.annotation=jdk.graal.compiler,ALL-UNNAMED";
+                // String patchModuleArg = "-J-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Djdk.module.validation=false --upgrade-module-path=" + options.customJvmciJar;
+                String patchModuleArg = "--patch-jdk-module=jdk.internal.vm.ci=" + options.customJvmciJar;
+                baseArgs.add(patchModuleArg);
+            }
+
+            // Add remaining mx arguments
+            baseArgs.addAll(List.of(
+                "--jmods-dir", "NO_JMODS"
+                , "--trust-http"
+                , "--no-jlinking"
+                , "--java-home"
+                , javaHome.toString()
+                , "--native-images=lib:native-image-agent,lib:native-image-diagnostics-agent"
+                , "--components=ni"
+                , "--exclude-components=nju,svmnfi,svml,tflm,svmt"
+                , options.disableDebuginfoStripping ? "--disable-debuginfo-stripping" : ""
+                , "build"
+            ));
+
             final List<String> args = Lists.concat(
-                List.of(
-                    mx.toString()
-                    , options.verbose ? "-V" : ""
-                    , "--jmods-dir", "NO_JMODS"
-                    , "--trust-http"
-                    , "--no-jlinking"
-                    , "--java-home"
-                    , javaHome.toString()
-                    , "--native-images=lib:native-image-agent,lib:native-image-diagnostics-agent"
-                    , "--components=ni"
-                    , "--exclude-components=nju,svmnfi,svml,tflm,svmt"
-                    , options.disableDebuginfoStripping ? "--disable-debuginfo-stripping" : ""
-                    , "build"
-                )
+                baseArgs
                 , buildArgs.args
             );
 
@@ -1245,7 +1299,7 @@ class Mx
         return Tasks.Exec.of(args, directory, mxEnvVars);
     }
 
-    static void patchSuites(Tasks.FileReplace.Effects effects, Path mandrelRepo)
+    static void patchSuites(Tasks.FileReplace.Effects effects, Path mandrelRepo, Options options)
     {
         LOG.debugf("Patch mx dependencies");
         Path suitePy = Path.of("substratevm", "mx.substratevm", "suite.py");
@@ -1290,6 +1344,19 @@ class Mx
             new Tasks.FileReplace(path, patchSuites(dependenciesToPatch))
             , effects
         );
+
+        // // Remove jdk.vm.ci.meta.annotation references if using custom JVMCI jar
+        // if (options.customJvmciJar != null)
+        // {
+        //     LOG.debugf("Patching compiler suite.py to remove jdk.vm.ci.meta.annotation references");
+        //     dependenciesToPatch = Map.ofEntries(
+        //         new SimpleEntry<>("^ +\"jdk\\.vm\\.ci\\.meta\\.annotation\",", ""),
+        //         new SimpleEntry<>("^ +\"jdk\\.vm\\.ci\\.meta\\.annotation to jdk\\.internal\\.vm\\.compiler\",", ""));
+        //     Tasks.FileReplace.replace(
+        //         new Tasks.FileReplace(path, patchSuites(dependenciesToPatch))
+        //         , effects
+        //     );
+        // }
 
         suitePy = Path.of("sdk", "mx.sdk", "suite.py");
         path = mandrelRepo.resolve(suitePy);
