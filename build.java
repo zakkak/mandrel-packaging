@@ -939,7 +939,7 @@ class Mx
         Pattern.compile("\"version\"\\s*:\\s*\"([0-9.]*)\"");
 
     static final List<BuildArgs> BUILD_JAVA_STEPS = List.of(
-        BuildArgs.of("--no-native", "--dependencies", "SVM,SVM_FOREIGN,GRAAL_SDK,SVM_DRIVER,SVM_AGENT,SVM_DIAGNOSTICS_AGENT")
+        BuildArgs.of("--no-native", "--dependencies", "SVM,SVM_FOREIGN,GRAAL_SDK,SVM_DRIVER,SVM_AGENT,SVM_DIAGNOSTICS_AGENT,LIBRARY_SUPPORT")
         , BuildArgs.of("--only",
             build.IS_WINDOWS ?
                 "native-image.exe.image-bash," +
