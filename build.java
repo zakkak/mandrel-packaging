@@ -1037,6 +1037,12 @@ class Mx
                 new Path[]{truffleDistPath.resolve("truffle-compiler.jar"), Path.of("lib", "truffle", "truffle-compiler.jar")}),
             new SimpleEntry<>("org.graalvm.compiler:compiler.jar",
                 new Path[]{compilerDistPath.resolve("graal.jar"), Path.of("lib", "jvmci", "graal.jar")}),
+            new SimpleEntry<>("org.graalvm.compiler:graal-options.jar",
+                new Path[]{compilerDistPath.resolve("graal-options.jar"), Path.of("lib", "jvmci", "graal-options.jar")}),
+            new SimpleEntry<>("org.graalvm.compiler:hostvmaccess.jar",
+                new Path[]{compilerDistPath.resolve("hostvmaccess.jar"), Path.of("lib", "svm", "builder", "hostvmaccess.jar")}),
+            new SimpleEntry<>("org.graalvm.compiler:vmaccess.jar",
+                new Path[]{compilerDistPath.resolve("vmaccess.jar"), Path.of("lib", "svm", "builder", "vmaccess.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:objectfile.jar",
                 new Path[]{substrateDistPath.resolve("objectfile.jar"), Path.of("lib", "svm", "builder", "objectfile.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:svm-capnproto-runtime.jar",
@@ -1054,7 +1060,19 @@ class Mx
             new SimpleEntry<>("org.graalvm.nativeimage:svm-foreign.jar",
                 new Path[]{substrateDistPath.resolve("svm-foreign.jar"), Path.of("lib", "svm", "builder", "svm-foreign.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:espresso-svm.jar",
-                new Path[]{espressoSharedDistPath.resolve("espresso-svm.jar"), Path.of("lib", "svm", "builder", "espresso-svm.jar")})
+                new Path[]{espressoSharedDistPath.resolve("espresso-svm.jar"), Path.of("lib", "svm", "builder", "espresso-svm.jar")}),
+            new SimpleEntry<>("org.graalvm.nativeimage:svm-shared.jar",
+                new Path[]{substrateDistPath.resolve("svm-shared.jar"), Path.of("lib", "svm", "svm-shared.jar")}),
+            new SimpleEntry<>("org.graalvm.nativeimage:svm-shared-builder.jar",
+                new Path[]{substrateDistPath.resolve("svm-shared.jar"), Path.of("lib", "svm", "builder", "svm-shared.jar")}),
+            new SimpleEntry<>("org.graalvm.nativeimage:svm-guest-staging.jar",
+                new Path[]{substrateDistPath.resolve("svm-guest-staging.jar"), Path.of("lib", "svm", "svm-guest-staging.jar")}),
+            new SimpleEntry<>("org.graalvm.nativeimage:svm-guest-staging-builder.jar",
+                new Path[]{substrateDistPath.resolve("svm-guest-staging.jar"), Path.of("lib", "svm", "builder", "svm-guest-staging.jar")}),
+            new SimpleEntry<>("org.graalvm.sdk:vmaccess-guest.jar",
+                new Path[]{sdkDistPath.resolve("vmaccess-guest.jar"), Path.of("lib", "svm", "vmaccess-guest.jar")}),
+            new SimpleEntry<>("org.graalvm.sdk:vmaccess-guest-builder.jar",
+                new Path[]{sdkDistPath.resolve("vmaccess-guest.jar"), Path.of("lib", "svm", "builder", "vmaccess-guest.jar")})
         );
 
         macroPaths = Map.ofEntries(
