@@ -420,22 +420,30 @@ public class build
                 logger.debugf("launcherMatcher.group(1): %s", launcherMatcher.group(1));
                 logger.debugf("launcherMatcher.group(2): %s", launcherMatcher.group(2));
 
-                // Build the launcher line with custom JVMCI jar if provided
-                String patchModuleArg = "";
-                if (customJvmciJar != null)
-                {
-                    final Path targetJar = mandrelJavaHome.resolve(Path.of("lib", "jvmci", "jdk.internal.vm.ci.jar"));
-                    patchModuleArg = " --patch-module jdk.internal.vm.ci=" + targetJar.toString();
-                    logger.debugf("Adding --patch-module argument for custom JVMCI jar: %s", patchModuleArg);
-                }
-
-                final String launcherLine = launcherMatcher.group(1) +
+                String line = launcherMatcher.group(1) +
                     " -Dorg.graalvm.version=\"" + mandrelVersion + "\"" +
                     " -Dorg.graalvm.vendorversion=\"Mandrel-" + mandrelVersion + "\"" +
                     " -Dorg.graalvm.vendor=\"" + (vendor != null ? vendor : defaultVendor) + "\"" +
                     " -Dorg.graalvm.vendorurl=\"" + (vendorUrl != null ? vendorUrl : defaultVendorUrl) + "\"" +
-                    patchModuleArg +
                     launcherMatcher.group(2);
+
+                if (customJvmciJar != null)
+                {
+                    final String locationRelativeJar = "\"${location}/../../jvmci/jdk.internal.vm.ci.jar\"";
+                    final String patchModulePattern = "--patch-module=jdk\\.internal\\.vm\\.ci=[^ ]+";
+                    if (line.matches(".*" + patchModulePattern + ".*"))
+                    {
+                        line = line.replaceFirst(patchModulePattern, Matcher.quoteReplacement("--patch-module=jdk.internal.vm.ci=" + locationRelativeJar));
+                        logger.debugf("Updated existing --patch-module to use location-relative path");
+                    }
+                    else
+                    {
+                        line = line + " --patch-module=jdk.internal.vm.ci=" + locationRelativeJar;
+                        logger.debugf("Added --patch-module argument for custom JVMCI jar");
+                    }
+                }
+
+                final String launcherLine = line;
                 lines.set(i, launcherLine);
                 logger.debugf("Launcher line AFTER: %s", lines.get(i));
                 break;
