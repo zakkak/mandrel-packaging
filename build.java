@@ -947,7 +947,7 @@ class Mx
         Pattern.compile("\"version\"\\s*:\\s*\"([0-9.]*)\"");
 
     static final List<BuildArgs> BUILD_JAVA_STEPS = List.of(
-        BuildArgs.of("--no-native", "--dependencies", "SVM,SVM_FOREIGN,GRAAL_SDK,SVM_DRIVER,SVM_AGENT,SVM_DIAGNOSTICS_AGENT,LIBRARY_SUPPORT")
+        BuildArgs.of("--no-native", "--dependencies", "SVM,SVM_FOREIGN,SVM_GUEST,GRAAL_SDK,SVM_DRIVER,SVM_AGENT,SVM_DIAGNOSTICS_AGENT,LIBRARY_SUPPORT")
         , BuildArgs.of("--only",
             build.IS_WINDOWS ?
                 "native-image.exe.image-bash," +
@@ -1061,6 +1061,8 @@ class Mx
                 new Path[]{substrateDistPath.resolve("svm-foreign.jar"), Path.of("lib", "svm", "builder", "svm-foreign.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:espresso-svm.jar",
                 new Path[]{espressoSharedDistPath.resolve("espresso-svm.jar"), Path.of("lib", "svm", "builder", "espresso-svm.jar")}),
+            new SimpleEntry<>("org.graalvm.nativeimage:svm-guest.jar",
+                new Path[]{substrateDistPath.resolve("svm-guest.jar"), Path.of("lib", "svm", "svm-guest.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:svm-shared.jar",
                 new Path[]{substrateDistPath.resolve("svm-shared.jar"), Path.of("lib", "svm", "svm-shared.jar")}),
             new SimpleEntry<>("org.graalvm.nativeimage:svm-shared-builder.jar",
