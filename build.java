@@ -427,6 +427,7 @@ public class build
                     " -Dorg.graalvm.vendorversion=\"Mandrel-" + mandrelVersion + "\"" +
                     " -Dorg.graalvm.vendor=\"" + (vendor != null ? vendor : defaultVendor) + "\"" +
                     " -Dorg.graalvm.vendorurl=\"" + (vendorUrl != null ? vendorUrl : defaultVendorUrl) + "\"" +
+                    " -DJVMCI_VERSION_CHECK=ignore" +
                     launcherMatcher.group(2);
 
                 if (customJvmciJar != null)
@@ -447,7 +448,11 @@ public class build
 
                 final String launcherLine = line;
                 lines.set(i, launcherLine);
+                lines.add(i, "launcher_args+=(\"-EJVMCI_VERSION_CHECK\")");
+                lines.add(i, "export JVMCI_VERSION_CHECK=ignore");
                 logger.debugf("Launcher line AFTER: %s", lines.get(i));
+                logger.debugf("Launcher line AFTER: %s", lines.get(i + 1));
+                logger.debugf("Launcher line AFTER: %s", lines.get(i + 2));
                 break;
             }
         }
@@ -1317,6 +1322,7 @@ class Mx
             return execTask(
                 args
                 , mandrelRepo.resolve("substratevm")
+                , new EnvVar("JVMCI_VERSION_CHECK", "ignore")
             );
         };
     }
